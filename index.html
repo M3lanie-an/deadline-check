@@ -631,6 +631,10 @@ function camelToLabel(key) {
   return key.replace(/([A-Z])/g, ' $1').trim();
 }
 
+function escAttr(str) {
+  return str.replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 // ─── RENDER FUNCTIONS ────────────────────────────────────────────────
 
 function renderHero(imageUrl, beat, headline) {
@@ -696,15 +700,15 @@ function renderSourceCard(source, index) {
   return `
     <div class="source-card${state.sourcesVisible ? ' visible' : ''}"
          style="transition-delay:${delay}s"
-         data-source-id="${source.id}">
+         data-source-id="${escAttr(source.id)}">
       <div class="source-journal">${esc(source.journal.toUpperCase())} &middot; ${esc(source.year)}</div>
       <div class="source-title">${esc(source.title)}</div>
       <div class="source-authors">${esc(source.authors)}</div>
-      <button class="details-toggle" onclick="toggleDetails('${source.id}')" style="margin-bottom:${expanded ? '14px' : '16px'}">
+      <button class="details-toggle" onclick="toggleDetails('${escAttr(source.id)}')" style="margin-bottom:${expanded ? '14px' : '16px'}">
         ${expanded ? '\u25BE Hide details' : '\u25B8 Check journal details'}
       </button>
       ${detailsHtml}
-      <button class="cite-btn" onclick="selectSource('${source.id}')">CITE THIS SOURCE</button>
+      <button class="cite-btn" onclick="selectSource('${escAttr(source.id)}')">CITE THIS SOURCE</button>
     </div>`;
 }
 
