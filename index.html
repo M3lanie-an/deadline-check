@@ -704,11 +704,11 @@ function renderSourceCard(source, index) {
       <div class="source-journal">${esc(source.journal.toUpperCase())} &middot; ${esc(source.year)}</div>
       <div class="source-title">${esc(source.title)}</div>
       <div class="source-authors">${esc(source.authors)}</div>
-      <button class="details-toggle" onclick="toggleDetails('${escAttr(source.id)}')" style="margin-bottom:${expanded ? '14px' : '16px'}">
+      <button class="details-toggle" data-id="${escAttr(source.id)}" onclick="toggleDetails(this.dataset.id)" style="margin-bottom:${expanded ? '14px' : '16px'}">
         ${expanded ? '\u25BE Hide details' : '\u25B8 Check journal details'}
       </button>
       ${detailsHtml}
-      <button class="cite-btn" onclick="selectSource('${escAttr(source.id)}')">CITE THIS SOURCE</button>
+      <button class="cite-btn" data-id="${escAttr(source.id)}" onclick="selectSource(this.dataset.id)">CITE THIS SOURCE</button>
     </div>`;
 }
 
@@ -828,7 +828,7 @@ function renderEnding(scenario) {
         <div class="cta-label">FROM THE RESEARCHERS</div>
         <div class="cta-headline">How do journalists evaluate research?</div>
         <div class="cta-body">Researchers at Claremont McKenna College are studying how journalists assess and use academic research in their reporting. We\u2019d love to hear from you &mdash; it takes about 10 minutes.</div>
-        <a class="cta-btn" href="https://claremontmckenna.co1.qualtrics.com/jfe/form/SV_bQqcBrQxwU8Zmtw" target="_blank" rel="noopener noreferrer">SHARE YOUR PERSPECTIVE &rarr;</a>
+        <a class="cta-btn" href="https://claremontmckenna.co1.qualtrics.com/jfe/form/SV_bQqcBrQxwU8Zmtw?src=jrnst" target="_blank" rel="noopener noreferrer">SHARE YOUR PERSPECTIVE &rarr;</a>
       </div>
 
       <div class="action-btns">
