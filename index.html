@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deadline Check — Can You Spot the Bad Science?</title>
+<meta name="description" content="An interactive simulation about sourcing decisions on deadline. Built by the STATS Lab at Claremont McKenna College.">
+<meta property="og:title" content="Deadline Check — Can You Spot the Bad Science?">
+<meta property="og:description" content="You're a reporter on deadline. Three stories, three sourcing decisions. Every citation you choose shapes what millions of readers believe.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1a18;
+  --paper: #faf9f6;
+  --surface: #f0efeb;
+  --rule: #ddd9d0;
+  --dim: #7a766e;
+  --muted-bg: #f0efeb;
+  --accent: #1a4a7a;
+  --alert: #b5302a;
+  --alert-bg: #fdecea;
+  --alert-border: #f5c6c2;
+  --mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  --display: 'Fraunces', 'Playfair Display', Georgia, serif;
+  --body: 'Newsreader', 'Source Serif 4', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--body);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+
+a { color: var(--accent); }
+a:hover { opacity: 0.7; }
+button { border: none; background: none; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+#app-wrap { max-width: 620px; margin: 0 auto; padding: 0 16px; }
+
+/* ── Hero image ── */
+.hero {
+  position: relative;
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 60%, rgba(250,249,246,1) 100%);
+}
+.hero-text {
+  position: relative;
+  z-index: 1;
+  padding: 0 16px 20px;
+  max-width: 620px;
+  margin: 0 auto;
+  width: 100%;
+}
+.hero-beat {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.hero-headline {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+}
+
+/* ── Title screen hero ── */
+.title-hero {
+  position: relative;
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+  height: 260px;
+  background-size: cover;
+  background-position: center;
+}
+.title-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 60%, rgba(250,249,246,1) 100%);
+}
+
+/* ── Progress dots ── */
+.progress { display: flex; gap: 8px; align-items: center; margin-bottom: 28px; }
+.dot {
+  height: 8px; border-radius: 4px;
+  transition: all 0.4s cubic-bezier(0.23,1,0.32,1);
+}
+.dot.active { width: 28px; background: var(--ink); }
+.dot.inactive { width: 8px; background: var(--rule); }
+.progress-label { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-left: 8px; }
+
+/* ── Deadline badge ── */
+.deadline-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 4px; margin-bottom: 24px;
+  font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 1px;
+}
+.deadline-badge.urgent { background: var(--alert-bg); border: 1px solid var(--alert-border); color: var(--alert); }
+.deadline-badge.normal { background: var(--muted-bg); border: 1px solid var(--rule); color: var(--dim); }
+.pulse-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--alert); animation: pulse 1.5s infinite;
+}
+
+/* ── Story context ── */
+.story-context {
+  border-left: 3px solid var(--ink); padding-left: 20px; margin-bottom: 28px;
+}
+.story-beat { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--dim); margin-bottom: 6px; font-weight: 700; }
+.story-headline { font-family: var(--display); font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--ink); margin-bottom: 8px; }
+.story-editor { font-size: 14px; color: var(--dim); font-style: italic; line-height: 1.5; }
+
+/* ── Narrative / typewriter ── */
+.narrative { font-size: 16px; line-height: 1.8; color: var(--dim); margin-bottom: 32px; }
+.narrative p { margin: 0 0 14px; }
+.narrative p:empty { min-height: 14px; }
+.skip-hint { opacity: 0.35; font-family: var(--mono); font-size: 10px; font-style: italic; }
+
+/* ── Feedback banner ── */
+.feedback { padding: 18px 22px; border-radius: 8px; margin-bottom: 28px; animation: slideIn 0.4s ease; }
+.feedback-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; font-weight: 700; margin-bottom: 6px; }
+.feedback-detail { font-size: 14px; line-height: 1.55; }
+
+/* ── Source cards ── */
+.source-card {
+  background: var(--paper); border: 1.5px solid var(--rule);
+  border-radius: 8px; padding: 24px; margin-bottom: 12px;
+  transition: all 0.4s cubic-bezier(0.23,1,0.32,1), border-color 0.2s;
+  opacity: 0; transform: translateY(12px);
+}
+.source-card.visible { opacity: 1; transform: translateY(0); }
+.source-card:hover { border-color: var(--ink); }
+.source-journal { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--dim); margin-bottom: 8px; font-weight: 600; }
+.source-title { font-family: var(--display); font-size: 17px; font-weight: 600; line-height: 1.35; color: var(--ink); margin-bottom: 8px; }
+.source-authors { font-size: 13px; color: var(--dim); margin-bottom: 16px; }
+.details-toggle {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; color: var(--accent);
+  letter-spacing: 0.5px; font-weight: 600; margin-bottom: 16px; display: block;
+}
+.details-grid {
+  display: grid; grid-template-columns: 1fr; gap: 10px 20px;
+  padding: 16px; background: var(--surface); border-radius: 6px;
+  margin-bottom: 16px; animation: fadeUp 0.25s ease;
+}
+.detail-key { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; color: var(--dim); margin-bottom: 3px; text-transform: uppercase; }
+.detail-val { font-size: 13px; font-weight: 500; line-height: 1.4; }
+.detail-val.flagged { color: var(--alert); }
+.cite-btn {
+  width: 100%; padding: 12px; border-radius: 6px; cursor: pointer;
+  font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+  background: transparent; color: var(--ink);
+  border: 1.5px solid var(--ink); transition: all 0.2s;
+}
+.cite-btn:hover { background: var(--ink); color: var(--paper); }
+
+/* ── Ending ── */
+.result-card {
+  padding: 36px 28px; border-radius: 12px; margin-bottom: 28px; text-align: center;
+}
+.result-label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 3px; margin-bottom: 14px; }
+.result-headline { font-family: var(--display); font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 14px; line-height: 1.2; }
+.result-summary { font-size: 15px; color: var(--dim); line-height: 1.65; max-width: 440px; margin: 0 auto; }
+
+.stats-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
+  background: var(--rule); border-radius: 8px; overflow: hidden; margin-bottom: 24px;
+}
+.stat-cell { padding: 16px 10px; background: var(--paper); text-align: center; }
+.stat-key { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; color: var(--dim); margin-bottom: 4px; text-transform: uppercase; }
+.stat-val { font-weight: 700; }
+.stat-val.number { font-size: 20px; font-family: var(--mono); }
+.stat-val.text { font-size: 14px; font-family: var(--body); }
+.stat-val.alert { color: var(--alert); }
+
+.path-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 32px; }
+.path-badge {
+  font-family: var(--mono); font-size: 10px; padding: 4px 12px;
+  border-radius: 4px; font-weight: 600;
+}
+.path-badge.good { background: #edf7ed; color: #1a5c2a; }
+.path-badge.bad { background: var(--alert-bg); color: var(--alert); }
+
+/* ── CTA ── */
+.cta-block {
+  padding: 32px 28px; border-radius: 12px;
+  background: var(--ink); color: var(--paper);
+  text-align: center; margin-bottom: 24px;
+}
+.cta-label { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; margin-bottom: 14px; opacity: 0.6; }
+.cta-headline { font-family: var(--display); font-size: 20px; font-weight: 700; line-height: 1.3; margin-bottom: 12px; }
+.cta-body { font-size: 14px; line-height: 1.65; opacity: 0.8; max-width: 400px; margin: 0 auto 24px; }
+.cta-btn {
+  display: inline-block; padding: 14px 40px; border-radius: 6px;
+  background: var(--paper); color: var(--ink);
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.5px; text-decoration: none; transition: opacity 0.2s;
+}
+.cta-btn:hover { opacity: 0.85; color: var(--ink); }
+
+.action-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-primary {
+  padding: 12px 28px; font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.5px; background: var(--ink); color: var(--paper);
+  border: none; border-radius: 6px; cursor: pointer;
+}
+
+
+/* ── Title screen ── */
+.title-bar {
+  background: var(--ink); color: var(--paper); padding: 8px 0;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+  text-align: center; font-weight: 600;
+  width: 100vw; margin-left: 50%; transform: translateX(-50%);
+}
+.title-content { min-height: 75vh; display: flex; flex-direction: column; justify-content: center; }
+.title-sub { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--dim); margin-bottom: 20px; font-weight: 700; }
+.title-h1 {
+  font-family: var(--display); font-size: clamp(32px, 7vw, 54px);
+  font-weight: 800; line-height: 1.05; margin-bottom: 24px; letter-spacing: -0.5px;
+}
+.title-h1 em { font-style: italic; }
+.title-desc { font-size: 18px; line-height: 1.7; color: var(--dim); margin-bottom: 16px; max-width: 460px; }
+.title-meta { font-family: var(--mono); font-size: 12px; color: var(--dim); margin-bottom: 40px; letter-spacing: 0.3px; }
+.start-btn {
+  padding: 16px 44px; font-size: 13px; font-weight: 700; font-family: var(--mono);
+  letter-spacing: 1px; background: var(--ink); color: var(--paper);
+  border-radius: 6px; text-transform: uppercase; border: none; cursor: pointer;
+}
+.title-footer { margin-top: 64px; padding-top: 20px; border-top: 2px solid var(--rule); }
+.title-footer p { font-size: 13px; color: var(--dim); line-height: 1.7; }
+.title-footer strong { color: var(--ink); }
+
+.sources-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--dim); margin-bottom: 14px; font-weight: 700; }
+
+.anim-fadeup { animation: fadeUp 0.5s ease; }
+
+/* ── Responsive ── */
+@media (min-width: 640px) {
+  #app-wrap { padding: 0 24px; }
+  .hero { height: 280px; }
+  .hero-text { padding: 0 24px 24px; }
+  .hero-headline { font-size: 24px; }
+  .title-hero { height: 320px; }
+  .details-grid { grid-template-columns: 1fr 1fr; }
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div id="app-wrap"></div>
+
+<script>
+// ─── SCENARIO DATA ───────────────────────────────────────────────────
+
+const SCENARIOS = [
+  {
+    id: "intro",
+    phase: 0,
+    story: {
+      beat: "HEALTH POLICY",
+      headline: "New Study Links Workplace Stress to Heart Disease Risk",
+      editor: "Your editor wants 800 words by 6 PM. You need a strong academic source to anchor the piece."
+    },
+    narrative: "You\u2019re writing a story on workplace health for a national outlet. A quick database search turns up two studies with relevant findings. Both seem to address your angle. You need to pick one to cite \u2014 and you\u2019re on deadline.",
+    timer: "4:47 PM \u2014 Deadline in 73 minutes",
+    sources: [
+      {
+        id: "legit",
+        type: "legitimate",
+        title: "Occupational Stress and Cardiovascular Outcomes: A 10-Year Longitudinal Study",
+        journal: "Journal of Occupational Health Psychology",
+        authors: "Chen, R., Williams, A.K., & Patel, S.",
+        year: "2025",
+        details: { publisher: "American Psychological Association", indexed: "PsycINFO, Scopus, Web of Science", peerReview: "Double-blind, 6-month review cycle", impact: "IF 5.8", citations: "Cited 23 times since publication" },
+        next: "good_1"
+      },
+      {
+        id: "pred",
+        type: "predatory",
+        title: "Workplace Stress Causes 73% Increase in Heart Attack Risk: A Comprehensive Analysis",
+        journal: "Global Journal of Health and Wellness Research",
+        authors: "Smith, J.",
+        year: "2025",
+        details: { publisher: "SciPress International Ltd.", indexed: "Google Scholar", peerReview: "\"Rapid review\" \u2014 2 weeks", impact: "Not rated", citations: "No citations found" },
+        next: "bad_1"
+      }
+    ]
+  },
+  {
+    id: "good_1",
+    phase: 1,
+    story: {
+      beat: "HEALTH POLICY",
+      headline: "Your Article is Published",
+      editor: "Story looks solid. The sourcing is clean."
+    },
+    narrative: "Your piece runs the next morning. The study you cited is from an APA journal with rigorous peer review. The findings are measured \u2014 they show a correlation, not a dramatic causal claim.\n\nA reader who\u2019s a cardiologist emails: \u201CThank you for citing a credible source. So much health reporting gets this wrong.\u201D\n\nYour editor is impressed. She assigns you a new story \u2014 education policy this time.",
+    timer: "PUBLISHED \u2014 8:02 AM next day",
+    feedback: { type: "good", label: "CLEAN SOURCING", detail: "Your article cites a credible, peer-reviewed study. The findings will hold up." },
+    sources: [
+      {
+        id: "legit",
+        type: "legitimate",
+        title: "Effects of Class Size Reduction on Student Achievement: A Meta-Analysis",
+        journal: "American Educational Research Journal",
+        authors: "Nakamura, T., Johnson, L.B., & Rivera, C.",
+        year: "2024",
+        details: { publisher: "SAGE / AERA", indexed: "ERIC, Scopus, Web of Science", peerReview: "Double-blind, 4\u20138 month cycle", impact: "IF 6.2", citations: "Cited 41 times" },
+        next: "good_2"
+      },
+      {
+        id: "pred",
+        type: "predatory",
+        title: "Smaller Classes Improve Test Scores by 40%: A Revolutionary Finding",
+        journal: "International Journal of Educational Advancement and Innovation",
+        authors: "Anderson, P.",
+        year: "2025",
+        details: { publisher: "Academic Journals Inc.", indexed: "Google Scholar only", peerReview: "\"Fast-track\" \u2014 10 days", impact: "Not rated", citations: "1 self-citation" },
+        next: "bad_2_from_good"
+      }
+    ]
+  },
+  {
+    id: "bad_1",
+    phase: 1,
+    story: {
+      beat: "HEALTH POLICY",
+      headline: "\u201C73% Increase in Heart Attack Risk\u201D \u2014 Your Story Goes Viral",
+      editor: "Great traffic numbers. But there\u2019s a problem."
+    },
+    narrative: "Your article goes viral \u2014 the \u201C73% increase\u201D is a perfect clickable stat. It gets shared 14,000 times. Cable news picks it up.\n\nThen a public health researcher tweets a thread: the journal you cited isn\u2019t indexed in any major database. The single author has no verifiable affiliation. The \u201C73%\u201D figure appears nowhere in the actual data.\n\nYour editor gets a call from the standards desk.",
+    timer: "11:34 AM \u2014 26 hours after publication",
+    feedback: { type: "bad", label: "SOURCE FLAGGED", detail: "The journal is identified as predatory. The study was never properly peer-reviewed. Your outlet is now associated with the error." },
+    sources: [
+      {
+        id: "legit",
+        type: "legitimate",
+        title: "Effects of Class Size Reduction on Student Achievement: A Meta-Analysis",
+        journal: "American Educational Research Journal",
+        authors: "Nakamura, T., Johnson, L.B., & Rivera, C.",
+        year: "2024",
+        details: { publisher: "SAGE / AERA", indexed: "ERIC, Scopus, Web of Science", peerReview: "Double-blind, 4\u20138 month cycle", impact: "IF 6.2", citations: "Cited 41 times" },
+        next: "good_2_recovery"
+      },
+      {
+        id: "pred",
+        type: "predatory",
+        title: "Smaller Classes Improve Test Scores by 40%: A Revolutionary Finding",
+        journal: "International Journal of Educational Advancement and Innovation",
+        authors: "Anderson, P.",
+        year: "2025",
+        details: { publisher: "Academic Journals Inc.", indexed: "Google Scholar only", peerReview: "\"Fast-track\" \u2014 10 days", impact: "Not rated", citations: "1 self-citation" },
+        next: "bad_2"
+      }
+    ]
+  },
+  {
+    id: "good_2",
+    phase: 2,
+    story: {
+      beat: "EDUCATION",
+      headline: "Another Solid Story Filed",
+      editor: "You\u2019re becoming the go-to for research-backed reporting."
+    },
+    narrative: "Your education piece cites a well-established meta-analysis from AERA. The findings are nuanced \u2014 class size effects vary by grade level and context. Your reporting reflects that complexity.\n\nA school board member references your article in a policy meeting. An education nonprofit shares it in their newsletter.\n\nYour editor mentions a promotion to the investigations team. One final story first \u2014 a politically sensitive piece on policing research.",
+    timer: "PUBLISHED \u2014 Well received",
+    feedback: { type: "good", label: "CREDIBILITY BUILDING", detail: "Two well-sourced stories in a row. Your reputation for careful research reporting is growing." },
+    sources: [
+      {
+        id: "legit",
+        type: "legitimate",
+        title: "Community Policing and Crime Reduction: A Systematic Review of Randomized Controlled Trials",
+        journal: "Criminology & Public Policy",
+        authors: "Owens, E., Martinez, D., & Kim, J.",
+        year: "2024",
+        details: { publisher: "Wiley / ASC", indexed: "Scopus, Web of Science, Criminal Justice Abstracts", peerReview: "Double-blind", impact: "IF 4.9", citations: "Cited 37 times" },
+        next: "good_ending"
+      },
+      {
+        id: "pred",
+        type: "predatory",
+        title: "Community Policing Eliminates Crime by 60% in All Contexts",
+        journal: "World Journal of Criminal Justice and Social Policy",
+        authors: "Lee, H.",
+        year: "2025",
+        details: { publisher: "Global Research Publishing", indexed: "Not indexed", peerReview: "\"Expedited\" \u2014 5 days", impact: "N/A", citations: "No citations" },
+        next: "bad_from_good_ending"
+      }
+    ]
+  },
+  {
+    id: "good_2_recovery",
+    phase: 2,
+    story: {
+      beat: "EDUCATION",
+      headline: "Learning from the First Mistake",
+      editor: "The correction ran. Now prove you can source carefully."
+    },
+    narrative: "Your editor gave you a second chance. This time you checked the journal\u2019s indexing before citing. The AERA study is rock solid.\n\nYour education piece is measured and well-received. A professor shares it as an example of good science journalism.\n\nYou\u2019re not out of the woods yet \u2014 but you\u2019re rebuilding trust. One more assignment.",
+    timer: "PUBLISHED \u2014 Reputation recovering",
+    feedback: { type: "recovery", label: "COURSE CORRECTING", detail: "After the correction, you sourced carefully. Keep this up." },
+    sources: [
+      {
+        id: "legit",
+        type: "legitimate",
+        title: "Community Policing and Crime Reduction: A Systematic Review of Randomized Controlled Trials",
+        journal: "Criminology & Public Policy",
+        authors: "Owens, E., Martinez, D., & Kim, J.",
+        year: "2024",
+        details: { publisher: "Wiley / ASC", indexed: "Scopus, Web of Science, Criminal Justice Abstracts", peerReview: "Double-blind", impact: "IF 4.9", citations: "Cited 37 times" },
+        next: "recovery_ending"
+      },
+      {
+        id: "pred",
+        type: "predatory",
+        title: "Community Policing Eliminates Crime by 60% in All Contexts",
+        journal: "World Journal of Criminal Justice and Social Policy",
+        authors: "Lee, H.",
+        year: "2025",
+        details: { publisher: "Global Research Publishing", indexed: "Not indexed", peerReview: "\"Expedited\" \u2014 5 days", impact: "N/A", citations: "No citations" },
+        next: "bad_ending_from_recovery"
+      }
+    ]
+  },
+  {
+    id: "bad_2_from_good",
+    phase: 2,
+    story: {
+      beat: "EDUCATION",
+      headline: "\u201C40% Improvement\u201D Claim Draws Scrutiny",
+      editor: "First miss in an otherwise strong record."
+    },
+    narrative: "The \u201C40% improvement\u201D stat was too clean. An education researcher points out the journal has no editorial board listing, and the publisher charges $500 per article with no real review process.\n\nYour editor runs a correction. Your previous credibility buys you some goodwill \u2014 but colleagues notice.\n\nOne more story. Make it count.",
+    timer: "CORRECTION ISSUED \u2014 48 hours after publication",
+    feedback: { type: "bad", label: "FIRST MISS", detail: "A predatory source slipped through. Your track record absorbs the hit \u2014 barely." },
+    sources: [
+      {
+        id: "legit",
+        type: "legitimate",
+        title: "Community Policing and Crime Reduction: A Systematic Review of Randomized Controlled Trials",
+        journal: "Criminology & Public Policy",
+        authors: "Owens, E., Martinez, D., & Kim, J.",
+        year: "2024",
+        details: { publisher: "Wiley / ASC", indexed: "Scopus, Web of Science, Criminal Justice Abstracts", peerReview: "Double-blind", impact: "IF 4.9", citations: "Cited 37 times" },
+        next: "mixed_ending"
+      }
+    ]
+  },
+  {
+    id: "bad_2",
+    phase: 2,
+    story: {
+      beat: "EDUCATION",
+      headline: "Second Correction in Two Weeks",
+      editor: "We need to talk."
+    },
+    narrative: "The education story follows the same pattern \u2014 a dramatic stat from a journal with no real peer review. Another correction.\n\nTwo corrections in two weeks. Your editor pulls you from the investigations shortlist. A media watchdog blog writes about your outlet\u2019s \u201Csourcing problem\u201D \u2014 citing both your stories.\n\nYou get one more assignment. A policing story. No more room for error.",
+    timer: "CORRECTION #2 \u2014 Credibility in freefall",
+    feedback: { type: "bad", label: "PATTERN FORMING", detail: "Two predatory sources in two stories. Editors and readers are losing trust." },
+    sources: [
+      {
+        id: "legit",
+        type: "legitimate",
+        title: "Community Policing and Crime Reduction: A Systematic Review of Randomized Controlled Trials",
+        journal: "Criminology & Public Policy",
+        authors: "Owens, E., Martinez, D., & Kim, J.",
+        year: "2024",
+        details: { publisher: "Wiley / ASC", indexed: "Scopus, Web of Science, Criminal Justice Abstracts", peerReview: "Double-blind", impact: "IF 4.9", citations: "Cited 37 times" },
+        next: "late_recovery_ending"
+      },
+      {
+        id: "pred",
+        type: "predatory",
+        title: "Community Policing Eliminates Crime by 60% in All Contexts",
+        journal: "World Journal of Criminal Justice and Social Policy",
+        authors: "Lee, H.",
+        year: "2025",
+        details: { publisher: "Global Research Publishing", indexed: "Not indexed", peerReview: "\"Expedited\" \u2014 5 days", impact: "N/A", citations: "No citations" },
+        next: "bad_ending"
+      }
+    ]
+  },
+
+  // ── ENDINGS ──────────────────────────────────────────────────────
+  {
+    id: "good_ending", phase: 3,
+    ending: { type: "excellent", label: "GOLD STANDARD", color: "#1a7a42",
+      headline: "Promoted to Investigations",
+      summary: "Three stories, three credible sources. Your editor trusts your judgment. A school board cited your work. A cardiologist thanked you. You\u2019re known for reporting that holds up.",
+      stats: { stories: 3, corrections: 0, credibility: "Excellent", readerTrust: "High" }
+    }
+  },
+  {
+    id: "bad_from_good_ending", phase: 3,
+    ending: { type: "mixed", label: "STUMBLE AT THE FINISH", color: "#b8860b",
+      headline: "Correction on Story #3",
+      summary: "Two strong stories, then a predatory source on the final piece. Your track record absorbs the hit, but the promotion is delayed. A reminder that deadline pressure can override good instincts.",
+      stats: { stories: 3, corrections: 1, credibility: "Recovering", readerTrust: "Moderate" }
+    }
+  },
+  {
+    id: "mixed_ending", phase: 3,
+    ending: { type: "mixed", label: "LESSON LEARNED", color: "#b8860b",
+      headline: "Back on Track \u2014 Barely",
+      summary: "One clean story, one correction, one recovery. You learned to check journal indexing the hard way. Your editor keeps you on staff but watches more closely now.",
+      stats: { stories: 3, corrections: 1, credibility: "Intact", readerTrust: "Rebuilding" }
+    }
+  },
+  {
+    id: "recovery_ending", phase: 3,
+    ending: { type: "recovery", label: "REDEEMED", color: "#2a6496",
+      headline: "Trust Rebuilt",
+      summary: "You made a mistake, owned it, and sourced carefully from then on. Your editor noticed the turnaround. The correction still stings \u2014 but you now check every journal before citing.",
+      stats: { stories: 3, corrections: 1, credibility: "Rebuilding", readerTrust: "Growing" }
+    }
+  },
+  {
+    id: "bad_ending_from_recovery", phase: 3,
+    ending: { type: "bad", label: "CREDIBILITY LOST", color: "#b5302a",
+      headline: "Reassigned Off the Beat",
+      summary: "Two corrections. The same pattern: dramatic claims from unverified journals. Your editor moves you off research-based reporting. Readers flagged both errors before your fact-checker did.",
+      stats: { stories: 3, corrections: 2, credibility: "Damaged", readerTrust: "Low" }
+    }
+  },
+  {
+    id: "late_recovery_ending", phase: 3,
+    ending: { type: "recovery", label: "LAST CHANCE TAKEN", color: "#2a6496",
+      headline: "Stayed on Staff",
+      summary: "Two early corrections nearly ended your run. But your final story was airtight \u2014 credible source, nuanced findings, solid reporting. Your editor gives you a probationary path forward.",
+      stats: { stories: 3, corrections: 2, credibility: "Fragile", readerTrust: "Uncertain" }
+    }
+  },
+  {
+    id: "bad_ending", phase: 3,
+    ending: { type: "terrible", label: "CAREER DAMAGE", color: "#8b1a1a",
+      headline: "Let Go from the Newsroom",
+      summary: "Three corrections. A media ethics blog profiled your outlet\u2019s sourcing failures. Your editor cited a \u201Cpattern of insufficient verification.\u201D The studies you cited were never peer-reviewed \u2014 and readers paid the price with bad information on health, education, and policing.",
+      stats: { stories: 3, corrections: 3, credibility: "Destroyed", readerTrust: "Gone" }
+    }
+  }
+];
+
+
+// ─── STATE ───────────────────────────────────────────────────────────
+
+const state = {
+  screen: "title",
+  currentId: "intro",
+  history: [],
+  sourcesVisible: false,
+  textDone: false,
+  expandedCards: {}
+};
+
+let typewriterInterval = null;
+let typewriterIdx = 0;
+
+// ─── HERO IMAGE MAP ──────────────────────────────────────────────────
+
+function getHeroImage(id) {
+  const healthIds = ["intro", "good_1", "bad_1"];
+  const headlineIds = ["bad_2_from_good"];
+  const policingIds = ["good_2", "good_2_recovery", "bad_2"];
+  const goodEndings = ["good_ending", "recovery_ending", "late_recovery_ending"];
+  const badEndings = ["bad_ending", "bad_ending_from_recovery", "bad_from_good_ending", "mixed_ending"];
+
+  if (healthIds.includes(id)) return "./health story.jpg";
+  if (headlineIds.includes(id)) return "./Headline design.jpg";
+  if (policingIds.includes(id)) return "./policing story.jpg";
+  if (goodEndings.includes(id)) return "./ending good.jpg";
+  if (badEndings.includes(id)) return "./ending bad.jpg";
+  return "./title screen.jpg";
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function isRedFlag(val) {
+  return val.includes("Not") || val.includes("N/A") || val.includes("Google Scholar only") ||
+         val.includes("No citations") || val.includes("self-citation") ||
+         val.includes("Rapid") || val.includes("Fast") || val.includes("Expedited");
+}
+
+function camelToLabel(key) {
+  return key.replace(/([A-Z])/g, ' $1').trim();
+}
+
+// ─── RENDER FUNCTIONS ────────────────────────────────────────────────
+
+function renderHero(imageUrl, beat, headline) {
+  return `
+    <div class="hero" style="background-image:url('${imageUrl}')">
+      <div class="hero-text">
+        <div class="hero-beat">${esc(beat)}</div>
+        <div class="hero-headline">${esc(headline)}</div>
+      </div>
+    </div>`;
+}
+
+function renderProgress(phase) {
+  const total = 3;
+  let dots = '';
+  for (let i = 0; i < total; i++) {
+    dots += `<div class="dot ${i <= phase ? 'active' : 'inactive'}"></div>`;
+  }
+  return `<div class="progress">${dots}<span class="progress-label">STORY ${Math.min(phase + 1, total)} OF ${total}</span></div>`;
+}
+
+function renderFeedback(fb) {
+  const colors = {
+    good: { bg: "#edf7ed", border: "#b7ddb7", text: "#1a5c2a" },
+    bad: { bg: "#fdecea", border: "#f5c6c2", text: "#8b1a1a" },
+    recovery: { bg: "#e8f0fe", border: "#b3cde3", text: "#1a4a7a" }
+  };
+  const c = colors[fb.type] || colors.recovery;
+  return `
+    <div class="feedback" style="background:${c.bg};border:1px solid ${c.border}">
+      <div class="feedback-label" style="color:${c.text}">${esc(fb.label)}</div>
+      <div class="feedback-detail" style="color:${c.text}">${esc(fb.detail)}</div>
+    </div>`;
+}
+
+function renderDeadlineBadge(text) {
+  const isUrgent = text.includes("Deadline") || text.includes("CORRECTION");
+  return `
+    <div class="deadline-badge ${isUrgent ? 'urgent' : 'normal'}">
+      ${isUrgent ? '<span class="pulse-dot"></span>' : ''}
+      ${esc(text)}
+    </div>`;
+}
+
+function renderSourceCard(source, index) {
+  const expanded = state.expandedCards[source.id] || false;
+  const delay = index * 0.12;
+
+  let detailsHtml = '';
+  if (expanded) {
+    let cells = '';
+    for (const [key, val] of Object.entries(source.details)) {
+      const flagged = isRedFlag(val) ? ' flagged' : '';
+      cells += `
+        <div>
+          <div class="detail-key">${esc(camelToLabel(key))}</div>
+          <div class="detail-val${flagged}">${esc(val)}</div>
+        </div>`;
+    }
+    detailsHtml = `<div class="details-grid">${cells}</div>`;
+  }
+
+  return `
+    <div class="source-card${state.sourcesVisible ? ' visible' : ''}"
+         style="transition-delay:${delay}s"
+         data-source-id="${source.id}">
+      <div class="source-journal">${esc(source.journal.toUpperCase())} &middot; ${esc(source.year)}</div>
+      <div class="source-title">${esc(source.title)}</div>
+      <div class="source-authors">${esc(source.authors)}</div>
+      <button class="details-toggle" onclick="toggleDetails('${source.id}')" style="margin-bottom:${expanded ? '14px' : '16px'}">
+        ${expanded ? '\u25BE Hide details' : '\u25B8 Check journal details'}
+      </button>
+      ${detailsHtml}
+      <button class="cite-btn" onclick="selectSource('${source.id}')">CITE THIS SOURCE</button>
+    </div>`;
+}
+
+function renderTitle() {
+  return `
+    <div class="anim-fadeup">
+      <div class="title-hero" style="background-image:url('./title screen.jpg')"></div>
+      <div class="title-bar">STATS LAB AT CMC &mdash; INTERACTIVE SIMULATION</div>
+      <div style="padding-top:32px;">
+        <div class="title-content">
+          <div class="title-sub">A SIMULATION FOR JOURNALISTS</div>
+          <h1 class="title-h1">
+            You\u2019re on Deadline.<br>
+            <em>Can You Spot the<br>Bad Science?</em>
+          </h1>
+          <p class="title-desc">
+            You\u2019re a reporter at a national outlet. Three stories, three sourcing decisions. Every citation you choose shapes what millions of readers believe.
+          </p>
+          <p class="title-meta">3 stories &middot; ~5 min &middot; 7 possible endings</p>
+          <div>
+            <button class="start-btn" onclick="startGame()">START REPORTING</button>
+          </div>
+          <div class="title-footer">
+            <p>Built by the <strong>STATS Lab at Claremont McKenna College</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderGame(scenario) {
+  const heroImg = getHeroImage(scenario.id);
+  const hero = renderHero(heroImg, scenario.story.beat, scenario.story.headline);
+
+  let feedbackHtml = '';
+  if (scenario.feedback) {
+    feedbackHtml = renderFeedback(scenario.feedback);
+  }
+
+  let sourcesHtml = '';
+  if (state.textDone && scenario.sources) {
+    let cards = '';
+    scenario.sources.forEach((s, i) => {
+      cards += renderSourceCard(s, i);
+    });
+    sourcesHtml = `
+      <div>
+        <div class="sources-label">SELECT A SOURCE TO CITE</div>
+        ${cards}
+      </div>`;
+  }
+
+  return `
+    ${hero}
+    <div style="padding:24px 0 48px;" class="anim-fadeup">
+      ${renderProgress(scenario.phase)}
+      ${feedbackHtml}
+      ${renderDeadlineBadge(scenario.timer)}
+      <div class="story-context">
+        <div class="story-beat">${esc(scenario.story.beat)}</div>
+        <div class="story-headline">${esc(scenario.story.headline)}</div>
+        <div class="story-editor">${esc(scenario.story.editor)}</div>
+      </div>
+      <div class="narrative" id="narrative-area">
+      </div>
+      ${sourcesHtml}
+    </div>`;
+}
+
+function renderEnding(scenario) {
+  const ending = scenario.ending;
+  const heroImg = getHeroImage(scenario.id);
+  const hero = renderHero(heroImg, "FINAL REPORT", ending.headline);
+
+  const endingColors = {
+    excellent: { bg: "#edf7ed", border: "#b7ddb7" },
+    recovery: { bg: "#e8f0fe", border: "#b3cde3" },
+    mixed: { bg: "#fef7e0", border: "#f0dfa0" },
+    bad: { bg: "#fdecea", border: "#f5c6c2" },
+    terrible: { bg: "#fdecea", border: "#e8a09a" }
+  };
+  const c = endingColors[ending.type] || endingColors.mixed;
+
+  let statsHtml = '';
+  for (const [k, v] of Object.entries(ending.stats)) {
+    const isText = (k === "credibility" || k === "readerTrust");
+    const isAlert = (v === "Destroyed" || v === "Gone" || v === "Damaged" || v === "Low");
+    statsHtml += `
+      <div class="stat-cell">
+        <div class="stat-key">${esc(camelToLabel(k))}</div>
+        <div class="stat-val ${isText ? 'text' : 'number'}${isAlert ? ' alert' : ''}">${esc(String(v))}</div>
+      </div>`;
+  }
+
+  let pathHtml = '';
+  state.history.forEach((h, i) => {
+    const cls = h === "predatory" ? "bad" : "good";
+    const icon = h === "predatory" ? "\u2715" : "\u2713";
+    pathHtml += `<span class="path-badge ${cls}">${icon} Story ${i + 1}</span>`;
+  });
+
+  return `
+    ${hero}
+    <div style="padding:24px 0 64px;" class="anim-fadeup">
+      ${renderProgress(3)}
+      <div class="result-card" style="background:${c.bg};border:1.5px solid ${c.border}">
+        <div class="result-label" style="color:${ending.color}">${esc(ending.label)}</div>
+        <div class="result-headline">${esc(ending.headline)}</div>
+        <div class="result-summary">${esc(ending.summary)}</div>
+      </div>
+
+      <div class="stats-grid">${statsHtml}</div>
+
+      <div class="path-badges">${pathHtml}</div>
+
+      <div class="cta-block">
+        <div class="cta-label">FROM THE RESEARCHERS</div>
+        <div class="cta-headline">How do journalists evaluate research?</div>
+        <div class="cta-body">Researchers at Claremont McKenna College are studying how journalists assess and use academic research in their reporting. We\u2019d love to hear from you &mdash; it takes about 10 minutes.</div>
+        <a class="cta-btn" href="https://claremontmckenna.co1.qualtrics.com/jfe/form/SV_bQqcBrQxwU8Zmtw" target="_blank" rel="noopener noreferrer">SHARE YOUR PERSPECTIVE &rarr;</a>
+      </div>
+
+      <div class="action-btns">
+        <button class="btn-primary" onclick="startGame()">PLAY AGAIN</button>
+      </div>
+    </div>`;
+}
+
+// ─── TYPEWRITER ──────────────────────────────────────────────────────
+
+function startTypewriter(text) {
+  clearInterval(typewriterInterval);
+  typewriterIdx = 0;
+  const el = document.getElementById('narrative-area');
+  if (!el) return;
+
+  el.style.cursor = 'pointer';
+  el.onclick = skipTypewriter;
+  renderTypewriterFrame(el, text, typewriterIdx);
+
+  typewriterInterval = setInterval(() => {
+    if (typewriterIdx < text.length) {
+      typewriterIdx++;
+      renderTypewriterFrame(el, text, typewriterIdx);
+    } else {
+      clearInterval(typewriterInterval);
+      typewriterInterval = null;
+      onTypewriterComplete();
+    }
+  }, 5);
+}
+
+function renderTypewriterFrame(el, text, idx) {
+  const visible = text.slice(0, idx);
+  const paragraphs = visible.split('\n');
+  let html = '';
+  paragraphs.forEach(p => {
+    html += `<p>${p ? esc(p) : '&nbsp;'}</p>`;
+  });
+  if (idx < text.length) {
+    html += '<span class="skip-hint">click to skip</span>';
+  }
+  el.innerHTML = html;
+}
+
+function skipTypewriter() {
+  const scenario = SCENARIOS.find(s => s.id === state.currentId);
+  if (!scenario || !scenario.narrative) return;
+  clearInterval(typewriterInterval);
+  typewriterInterval = null;
+  typewriterIdx = scenario.narrative.length;
+  const el = document.getElementById('narrative-area');
+  if (el) {
+    renderTypewriterFrame(el, scenario.narrative, typewriterIdx);
+    el.style.cursor = 'default';
+    el.onclick = null;
+  }
+  onTypewriterComplete();
+}
+
+function onTypewriterComplete() {
+  if (state.textDone) return;
+  state.textDone = true;
+  const scenario = SCENARIOS.find(s => s.id === state.currentId);
+  if (!scenario || !scenario.sources) return;
+
+  const container = document.getElementById('narrative-area');
+  if (!container) return;
+  const parent = container.parentElement;
+
+  let sourcesDiv = document.getElementById('sources-container');
+  if (!sourcesDiv) {
+    sourcesDiv = document.createElement('div');
+    sourcesDiv.id = 'sources-container';
+    parent.appendChild(sourcesDiv);
+  }
+
+  let cards = '';
+  scenario.sources.forEach((s, i) => {
+    cards += renderSourceCard(s, i);
+  });
+  sourcesDiv.innerHTML = `<div class="sources-label">SELECT A SOURCE TO CITE</div>${cards}`;
+
+  setTimeout(() => {
+    state.sourcesVisible = true;
+    document.querySelectorAll('.source-card').forEach(card => {
+      card.classList.add('visible');
+    });
+  }, 150);
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────
+
+function startGame() {
+  state.screen = "game";
+  state.currentId = "intro";
+  state.history = [];
+  state.sourcesVisible = false;
+  state.textDone = false;
+  state.expandedCards = {};
+  render();
+}
+
+function selectSource(sourceId) {
+  const scenario = SCENARIOS.find(s => s.id === state.currentId);
+  if (!scenario || !scenario.sources) return;
+  const source = scenario.sources.find(s => s.id === sourceId);
+  if (!source) return;
+
+  state.history.push(source.type);
+  state.sourcesVisible = false;
+  state.textDone = false;
+  state.expandedCards = {};
+
+  setTimeout(() => {
+    state.currentId = source.next;
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 250);
+}
+
+function toggleDetails(sourceId) {
+  state.expandedCards[sourceId] = !state.expandedCards[sourceId];
+  const scenario = SCENARIOS.find(s => s.id === state.currentId);
+  if (!scenario || !scenario.sources) return;
+
+  const sourcesDiv = document.getElementById('sources-container');
+  if (!sourcesDiv) return;
+
+  let cards = '';
+  scenario.sources.forEach((s, i) => {
+    cards += renderSourceCard(s, i);
+  });
+  sourcesDiv.innerHTML = `<div class="sources-label">SELECT A SOURCE TO CITE</div>${cards}`;
+
+  if (state.sourcesVisible) {
+    document.querySelectorAll('.source-card').forEach(card => {
+      card.classList.add('visible');
+    });
+  }
+}
+
+// ─── MAIN RENDER ─────────────────────────────────────────────────────
+
+function render() {
+  clearInterval(typewriterInterval);
+  typewriterInterval = null;
+
+  const app = document.getElementById('app-wrap');
+  const scenario = SCENARIOS.find(s => s.id === state.currentId);
+
+  if (state.screen === "title") {
+    app.innerHTML = renderTitle();
+    return;
+  }
+
+  if (state.screen === "game" && scenario) {
+    if (scenario.ending) {
+      app.innerHTML = renderEnding(scenario);
+    } else {
+      app.innerHTML = renderGame(scenario);
+      startTypewriter(scenario.narrative);
+    }
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
