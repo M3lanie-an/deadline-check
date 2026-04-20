@@ -702,6 +702,10 @@ function camelToLabel(key) {
   return key.replace(/([A-Z])/g, ' $1').trim();
 }
 
+function escAttr(str) {
+  return str.replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 // ─── RENDER FUNCTIONS ────────────────────────────────────────────────
 
 function renderHero(imageUrl, beat, headline) {
@@ -767,15 +771,15 @@ function renderSourceCard(source, index) {
   return `
     <div class="source-card${state.sourcesVisible ? ' visible' : ''}"
          style="transition-delay:${delay}s"
-         data-source-id="${source.id}">
+         data-source-id="${escAttr(source.id)}">
       <div class="source-journal">${esc(source.journal.toUpperCase())} &middot; ${esc(source.year)}</div>
       <div class="source-title">${esc(source.title)}</div>
       <div class="source-authors">${esc(source.authors)}</div>
-      <button class="details-toggle" onclick="toggleDetails('${source.id}')" style="margin-bottom:${expanded ? '14px' : '16px'}">
+      <button class="details-toggle" onclick="toggleDetails('${escAttr(source.id)}')" style="margin-bottom:${expanded ? '14px' : '16px'}">
         ${expanded ? '\u25BE Hide details' : '\u25B8 Check journal details'}
       </button>
       ${detailsHtml}
-      <button class="cite-btn" onclick="selectSource('${source.id}')">CITE THIS SOURCE</button>
+      <button class="cite-btn" onclick="selectSource('${escAttr(source.id)}')">CITE THIS SOURCE</button>
     </div>`;
 }
 
@@ -1118,15 +1122,24 @@ function submitContactForm(e) {
     + '&entry.2106441402=' + encodeURIComponent(email)
     + '&entry.1916001828=' + encodeURIComponent(linkedin);
 
-  window.open(prefillUrl, '_blank', 'noopener,noreferrer');
+  const win = window.open(prefillUrl, '_blank', 'noopener,noreferrer');
 
   const area = document.getElementById('contact-form-area');
-  if (area) {
+  if (!area) return;
+
+  if (win) {
     area.innerHTML = `
       <div class="form-confirm">
         <div class="form-confirm-check">\u2713</div>
         <div class="form-confirm-msg">Thank you \u2014 we'll be in touch.</div>
         <div class="form-confirm-sub">A new tab has opened with the form. Please review and submit it there.</div>
+      </div>`;
+  } else {
+    area.innerHTML = `
+      <div class="form-confirm">
+        <div class="form-confirm-check">\u2713</div>
+        <div class="form-confirm-msg">Thank you \u2014 we'll be in touch.</div>
+        <div class="form-confirm-sub">Your browser blocked the popup. <a href="${prefillUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--paper);text-decoration:underline">Click here to open the form</a>.</div>
       </div>`;
   }
 }
@@ -1146,13 +1159,17 @@ function copyShareLink() {
 function shareLinkedIn(e) {
   e.preventDefault();
   const url = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(SHARE_URL);
-  window.open(url, '_blank', 'noopener,noreferrer,width=600,height=500');
+  if (!window.open(url, '_blank', 'noopener,noreferrer,width=600,height=500')) {
+    window.location.href = url;
+  }
 }
 
 function shareTwitter(e) {
   e.preventDefault();
   const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT) + '&url=' + encodeURIComponent(SHARE_URL);
-  window.open(url, '_blank', 'noopener,noreferrer,width=600,height=400');
+  if (!window.open(url, '_blank', 'noopener,noreferrer,width=600,height=400')) {
+    window.location.href = url;
+  }
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────
